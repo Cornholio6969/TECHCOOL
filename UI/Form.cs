@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace TECHCOOL.UI
 {
@@ -8,7 +9,6 @@ namespace TECHCOOL.UI
         T record;
         Dictionary<string, Field<T>> fields = new();
         int field_edit_index = 0;
-
         string current_field
         {
             get
@@ -33,29 +33,44 @@ namespace TECHCOOL.UI
             fields.Add(title, field);
         }
 
-        public Form<T> TextBox(string title, Func<T, object> propertySelector)
+        // New TextBox method using property selector
+        public Form<T> TextBox(string title, Func<T, object> propertySelector, Action<T, object> propertySetter)
         {
-            fields.Add(title, new TextBox<T> { Title = title, PropertySelector = propertySelector });
+            fields.Add(title, new TextBox<T> { Title = title, PropertySelector = propertySelector, PropertySetter = propertySetter });
             return this;
         }
 
-        public Form<T> IntBox(string title, Func<T, object> propertySelector)
+        public Form<T> IntBox(string title, Func<T, object> propertySelector, Action<T, object> propertySetter)
         {
-            fields.Add(title, new IntBox<T> { Title = title, PropertySelector = propertySelector });
+            fields.Add(title, new IntBox<T> { Title = title, PropertySelector = propertySelector, PropertySetter = propertySetter });
             return this;
         }
 
-        public Form<T> DoubleBox(string title, Func<T, object> propertySelector)
+        public Form<T> DoubleBox(string title, Func<T, object> propertySelector, Action<T, object> propertySetter)
         {
-            fields.Add(title, new DoubleBox<T> { Title = title, PropertySelector = propertySelector });
+            fields.Add(title, new DoubleBox<T> { Title = title, PropertySelector = propertySelector, PropertySetter = propertySetter });
             return this;
         }
 
-        public Form<T> SelectBox(string title, Func<T, object> propertySelector, Dictionary<string, object> options = null)
+        public Form<T> SelectBox(string title, Func<T, object> propertySelector, Action<T, object> propertySetter, Dictionary<string, object> options = null)
         {
             if (options == null) options = new();
-            fields.Add(title, new SelectBox<T> { Title = title, PropertySelector = propertySelector, Options = options });
+            fields.Add(title, new SelectBox<T> { Title = title, PropertySelector = propertySelector, PropertySetter = propertySetter, Options = options });
             return this;
+        }
+
+        public void AddOption(string field, string option, object value)
+        {
+            if (!fields.ContainsKey(field))
+            {
+                throw new Exception("There is no such field in this form called " + field);
+            }
+            if (!(fields[field] is SelectBox<T>))
+            {
+                throw new Exception("Field " + field + " is not a SelectBox");
+            }
+            var f = (SelectBox<T>)fields[field];
+            f.Options.Add(option, value);
         }
 
         public bool Edit(T record)
@@ -86,19 +101,25 @@ namespace TECHCOOL.UI
                 {
                     case ConsoleKey.Enter:
                         fields[current_field].Enter();
+                        object property_value = fields[current_field].Value;
+
+                        fields[current_field].PropertySetter(record, property_value);
                         recordChanged = true;
                         break;
+
                     case ConsoleKey.DownArrow:
                         field_edit_index++;
                         break;
+
                     case ConsoleKey.UpArrow:
                         field_edit_index--;
                         break;
+
                     case ConsoleKey.Escape:
                         return recordChanged;
                 }
-            }
-            while (true);
+
+            } while (true);
         }
 
         protected void Draw()
@@ -114,12 +135,25 @@ namespace TECHCOOL.UI
             }
             Console.WriteLine();
         }
+
+        int getLongestTitleLength()
+        {
+            int longest = 0;
+            foreach (KeyValuePair<string, Field<T>> kv in fields)
+            {
+                Field<T> field = kv.Value;
+                longest = Math.Max(field.Title.Length, longest);
+            }
+            return longest;
+        }
     }
+
 
     public abstract class Field<T>
     {
         public string Title { get; set; }
         public Func<T, object> PropertySelector { get; set; }
+        public Action<T, object> PropertySetter { get; set; }
         public abstract object Value { get; set; }
         public bool Focus { get; set; }
         public int FieldWidth { get; set; } = 20;
@@ -137,33 +171,9 @@ namespace TECHCOOL.UI
 
         public override void Enter()
         {
-            bool ok;
-            string input;
-            Console.CursorVisible = true;
-
             Console.SetCursorPosition(left + LabelWidth, top);
-            Screen.ColorEdit();
-            Console.WriteLine(Value);
-            do
-            {
-                Console.SetCursorPosition(left + LabelWidth, top);
-                input = Console.ReadLine();
-                ok = Validate(input);
-                if (!ok)
-                {
-                    Console.SetCursorPosition(left + LabelWidth, top);
-                    Screen.ColorError();
-                    Console.WriteLine(input);
-                }
-            } while (!ok);
+            string input = Console.ReadLine();
             Value = input;
-            Console.CursorVisible = false;
-            Screen.ColorDefault();
-        }
-
-        public virtual bool Validate(string input)
-        {
-            return true;
         }
 
         public override void Draw(int left, int top)
@@ -176,13 +186,8 @@ namespace TECHCOOL.UI
                 Screen.ColorFocus();
             else
                 Screen.ColorField();
-            Console.Write($"{{0,-{FieldWidth}}}", this);
+            Console.Write($"{{0,-{FieldWidth}}}", Value?.ToString());
             Screen.ColorDefault();
-        }
-
-        public override string ToString()
-        {
-            return value == null ? "" : value.ToString();
         }
     }
 
@@ -192,19 +197,33 @@ namespace TECHCOOL.UI
         public override object Value
         {
             get => value;
-            set => int.TryParse(value.ToString(), out this.value);
+            set
+            {
+                int.TryParse(value.ToString(), out this.value);
+            }
         }
 
-        public override string ToString()
-        {
-            return value.ToString();
-        }
-
-        public override bool Validate(string input)
+        public bool Validate(string input)
         {
             return int.TryParse(input, out _);
         }
+
+        public override void Enter()
+        {
+            bool ok;
+            string input;
+            Console.CursorVisible = true;
+            do
+            {
+                Console.SetCursorPosition(left + LabelWidth, top);
+                input = Console.ReadLine();
+                ok = Validate(input);
+            } while (!ok);
+            Value = input;
+            Console.CursorVisible = false;
+        }
     }
+
 
     public class DoubleBox<T> : TextBox<T>
     {
@@ -212,12 +231,30 @@ namespace TECHCOOL.UI
         public override object Value
         {
             get => value;
-            set => double.TryParse(value.ToString(), out this.value);
+            set
+            {
+                double.TryParse(value.ToString(), out this.value);
+            }
         }
 
-        public override string ToString()
+        public bool Validate(string input)
         {
-            return value.ToString();
+            return double.TryParse(input, out _);
+        }
+
+        public override void Enter()
+        {
+            bool ok;
+            string input;
+            Console.CursorVisible = true;
+            do
+            {
+                Console.SetCursorPosition(left + LabelWidth, top);
+                input = Console.ReadLine();
+                ok = Validate(input);
+            } while (!ok);
+            Value = input;
+            Console.CursorVisible = false;
         }
     }
 
@@ -233,6 +270,16 @@ namespace TECHCOOL.UI
         public override void Enter()
         {
             bool stop = false;
+            Func<int, object> valueByIndex = (idx) =>
+            {
+                int ii = 0;
+                foreach (KeyValuePair<string, object> kv in Options)
+                {
+                    if (ii++ == idx) return kv.Value;
+                }
+                return null;
+            };
+
             do
             {
                 int i = 0;
@@ -252,7 +299,7 @@ namespace TECHCOOL.UI
                 switch (key)
                 {
                     case ConsoleKey.Enter:
-                        value = GetValueByIndex(index);
+                        value = valueByIndex(index);
                         Screen.Clear();
                         stop = true;
                         break;
@@ -272,16 +319,6 @@ namespace TECHCOOL.UI
             Screen.ColorDefault();
         }
 
-        private object GetValueByIndex(int idx)
-        {
-            int i = 0;
-            foreach (KeyValuePair<string, object> kv in Options)
-            {
-                if (i++ == idx) return kv.Value;
-            }
-            return null;
-        }
-
         public override void Draw(int left, int top)
         {
             this.left = left;
@@ -292,7 +329,7 @@ namespace TECHCOOL.UI
                 Screen.ColorFocus();
             else
                 Screen.ColorField();
-            Console.Write($"{{0,-{FieldWidth}}}", Value);
+            Console.Write($"{{0,-{FieldWidth}}}", Value?.ToString());
             Screen.ColorDefault();
         }
     }
