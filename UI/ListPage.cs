@@ -18,7 +18,8 @@ namespace TECHCOOL.UI
         const char SOUTH_T = '┴';
         const char CROSS = '┼';
 
-        class Column {
+        class Column 
+        {
             public string Title { get; set; }
             public int Width { get; set; }
             public Func<T, object> PropertySelector { get; set; }

@@ -3,12 +3,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <PackageId>TECHCOOL</PackageId>
     <Version>1.4.1</Version>
-    <Authors>Simon Bønding</Authors>
+    <Authors>Simon Bønding x Corn</Authors>
     <Company>TECHCOLLEGE</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageDescription>A straight forward library for quickly integrating a database and embedding a webserver in your dotnet application
+    <PackageDescription>A straight forward library for quickly integrating a database and embedding a webserver in your dotnet application. Forked from Techcool to add bonus features.
 For educational use!</PackageDescription>
-    <RepositoryUrl>https://github.com/sinb-dev/TECHCOOL</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Cornholio6969/TECHCOOL</RepositoryUrl>
     <Title>TECHCOOL</Title>
     <PackageIcon>TECHCOOL.png</PackageIcon>
   </PropertyGroup>
