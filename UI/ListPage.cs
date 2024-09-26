@@ -28,9 +28,17 @@ namespace TECHCOOL.UI
 
         Dictionary<string, Column> columns = new();
         Dictionary<ConsoleKey, Action<T>> keyActions = new();
-        List<T> records = new();
+        List<T> records;
         int selected_index = 0;
         bool select = false;
+
+        public ListPage(List<T> contents = null)
+        {
+            if (contents == null)
+                records = new();
+            else
+                records = contents;
+        }
 
         public void Up()
         {
@@ -94,6 +102,7 @@ namespace TECHCOOL.UI
 
         public void Draw()
         {
+            Screen.Clear();
             StringBuilder sb = new StringBuilder();
             int total_width = getWidth();
             if (total_width < 2) return;
@@ -108,7 +117,7 @@ namespace TECHCOOL.UI
             {
                 int width = kv.Value.Width;
                 var fill = "".PadRight(width, H_BORDER_CHARACTER);
-                UH_LINE += fill + (count < columns.Count-1 ? NORTH_T : null);
+                UH_LINE += fill + (count < columns.Count - 1 ? NORTH_T : null);
                 MH_LINE += fill + (count < columns.Count - 1 ? CROSS : null);
                 LH_LINE += fill + (count < columns.Count - 1 ? SOUTH_T : null);
                 count++;
@@ -131,6 +140,7 @@ namespace TECHCOOL.UI
             sb.Append(Environment.NewLine);
             sb.Append(MH_LINE);
             Console.WriteLine(sb);
+            Console.WriteLine($"{selected_index + 1} / {records.Count}");
 
             // draw contents
 
@@ -195,12 +205,18 @@ namespace TECHCOOL.UI
                 switch (key)
                 {
                     case ConsoleKey.Enter:
-                        return records[selected_index];
+                        if (records.Count > 0)
+                            return records[selected_index];
+                        else
+                            break;
                     case ConsoleKey.DownArrow:
-                        Down();
+                        if (records.Count > 0)
+                            Down();
                         break;
                     case ConsoleKey.UpArrow:
                         Up();
+                        if (records.Count > 0)
+                            Up();
                         break;
                     default:
                         if (keyActions.ContainsKey(key))
@@ -213,6 +229,7 @@ namespace TECHCOOL.UI
                             else
                             {
                                 keyActions[key](new T());
+                                return default(T);
                             }
                         }
                         else
