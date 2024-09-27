@@ -18,7 +18,7 @@ namespace TECHCOOL.UI
         const char SOUTH_T = '┴';
         const char CROSS = '┼';
 
-        class Column 
+        class Column
         {
             public string Title { get; set; }
             public int Width { get; set; }
@@ -102,7 +102,7 @@ namespace TECHCOOL.UI
 
         public void Draw()
         {
-            Screen.Clear();
+            //Screen.Clear();
             StringBuilder sb = new StringBuilder();
             int total_width = getWidth();
             if (total_width < 2) return;
@@ -140,7 +140,7 @@ namespace TECHCOOL.UI
             sb.Append(Environment.NewLine);
             sb.Append(MH_LINE);
             Console.WriteLine(sb);
-            Console.WriteLine($"{selected_index + 1} / {records.Count}");
+
 
             // draw contents
 
@@ -178,6 +178,7 @@ namespace TECHCOOL.UI
             }
             sb.Append(LH_LINE);
             Console.WriteLine(sb.ToString());
+            Console.WriteLine($"{selected_index + 1} / {records.Count}");
             Console.SetCursorPosition(0, selected_index);
         }
 
@@ -214,7 +215,6 @@ namespace TECHCOOL.UI
                             Down();
                         break;
                     case ConsoleKey.UpArrow:
-                        Up();
                         if (records.Count > 0)
                             Up();
                         break;
@@ -225,7 +225,7 @@ namespace TECHCOOL.UI
                             {
                                 keyActions[key](records[selected_index]);
                                 return default(T);
-                            }    
+                            }
                             else
                             {
                                 keyActions[key](new T());
